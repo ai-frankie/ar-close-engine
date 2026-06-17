@@ -1,0 +1,10 @@
+# Generated on run
+AR_Health_Report.xlsx
+AR_Issues_Report.xlsx
+AR_Close_Review.xlsx
+__pycache__/
+*.pyc
+.venv/
+venv/
+.DS_Store
+Thumbs.db
