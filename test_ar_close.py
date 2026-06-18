@@ -24,7 +24,7 @@ def truth():
 
 class TestSubledger:
     def test_total(self, close_result):
-        assert close_result["subledger"] == 26_713_341.80
+        assert abs(close_result["subledger"] - 26_713_341.80) < 0.01
 
     def test_aging_buckets_sum_to_subledger(self, close_result):
         bucket_total = sum(v["open"] for v in close_result["agesum"].values())
@@ -33,10 +33,10 @@ class TestSubledger:
 
 class TestReserve:
     def test_required_reserve(self, close_result):
-        assert close_result["reserve"] == 1_613_173.40
+        assert abs(close_result["reserve"] - 1_613_173.40) < 0.01
 
     def test_nrv(self, close_result):
-        assert close_result["nrv"] == 25_100_168.40
+        assert abs(close_result["nrv"] - 25_100_168.40) < 0.01
 
     def test_nrv_positive(self, close_result):
         assert close_result["nrv"] > 0
@@ -52,10 +52,10 @@ class TestReserve:
 
 class TestGLReconciliation:
     def test_gl_ar_balance(self, close_result):
-        assert close_result["gl_ar"] == 26_711_691.80
+        assert abs(close_result["gl_ar"] - 26_711_691.80) < 0.01
 
     def test_variance(self, close_result):
-        assert close_result["variance"] == -1_650.00
+        assert abs(close_result["variance"] - (-1_650.00)) < 0.01
 
     def test_residual_zero(self, close_result):
         """Flagged breaks must fully explain the variance — residual must be 0."""
@@ -91,20 +91,21 @@ class TestControlChecks:
 
 class TestReviewTruth:
     def test_truth_subledger(self, truth):
-        assert truth["subledger total"] == 26_713_341.80
+        assert abs(truth["subledger total"] - 26_713_341.80) < 0.01
 
     def test_truth_reserve(self, truth):
-        assert truth["required reserve"] == 1_613_173.40
+        assert abs(truth["required reserve"] - 1_613_173.40) < 0.01
 
     def test_truth_nrv(self, truth):
-        assert truth["net realizable"] == 25_100_168.40
+        assert abs(truth["net realizable"] - 25_100_168.40) < 0.01
 
 
 class TestPlantedErrors:
     """ar_review.py must catch both planted mistakes in AR_Close_Prepared_SAMPLE.xlsx."""
 
     @pytest.fixture(scope="class")
-    def review_rows(self):
+    @staticmethod
+    def review_rows():
         rows, _ = run_review()
         return {m: (g, e, res, diag) for m, g, e, res, diag in rows}
 
