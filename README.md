@@ -1,5 +1,7 @@
 # AR Reconciliation & Close Engine
 
+[![CI](https://github.com/ai-frankie/ar-close-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/ai-frankie/ar-close-engine/actions/workflows/ci.yml)
+
 An automated accounts-receivable month-end close, written from the controls up: it computes the subledger, reconciles it to the GL control account, calculates the bad-debt reserve, and runs a SOX-style controls pass — then an **independent reviewer** re-derives the truth from raw data and catches a preparer's errors. Built by an accountant, in code.
 
 > **Thesis:** financial close fails silently — a number is off, nobody knows until audit. This engine makes every figure traceable: subledger → GL → reserve → NRV, each tied and control-checked, with breaks *surfaced* rather than smoothed over.
@@ -52,12 +54,22 @@ ALL CONTROLS PASS
 
 ## Run it
 
-Requires Python 3.11+ and `openpyxl` (`pip install openpyxl`).
+Requires Python 3.11+ and `openpyxl`.
 
 ```bash
+pip install -r requirements.txt
 python ar_close.py     # automated close + controls
 python ar_issues.py    # exception scanner
 python ar_review.py    # independent reviewer (catches planted errors)
 ```
 
 No config, no network, no keys — runs on the included synthetic data out of the box.
+
+## Tests
+
+```bash
+pip install -r requirements.txt pytest
+pytest -v
+```
+
+`test_ar_close.py` — **25 tests**, run in CI on every push. They assert the close ties to the cent (subledger `26,713,341.80`, reserve `1,613,173.40`, NRV `25,100,168.40`, recon residual `0.00`, all five controls pass) and that the independent reviewer catches **both** planted preparer errors (the double-counted subledger and the sign-flipped true-up). The scripts expose `run_close()` / `compute_truth()` / `run_review()` so the logic is testable without side effects — `import ar_close` does nothing until you call it.
