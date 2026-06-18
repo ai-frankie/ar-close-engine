@@ -11,7 +11,7 @@ D = os.path.dirname(os.path.abspath(__file__))
 
 def fnum(x):
     try: return float(str(x).replace(",", ""))
-    except: return None
+    except (ValueError, TypeError): return None
 def main():
     aging = list(csv.DictReader(open(os.path.join(D,"AR_Aging.csv"),encoding="utf-8")))
     subledger = round(sum(fnum(a["Open_Balance"]) or 0 for a in aging), 2)

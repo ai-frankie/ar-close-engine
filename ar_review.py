@@ -18,12 +18,12 @@ RATES = {"Current":0.005,"31-60":0.02,"61-90":0.05,"91-120":0.15,"120+":0.40}
 
 def fnum(x):
     try: return float(str(x).replace(",", ""))
-    except: return None
+    except (ValueError, TypeError): return None
 def fdate(x):
     x = (x or "").strip()
     for f in ("%Y-%m-%d", "%m/%d/%Y", "%Y-%m-%d %H:%M:%S"):
         try: return dt.datetime.strptime(x, f).date()
-        except: pass
+        except (ValueError, TypeError): pass
     return None
 def load(n):
     p = os.path.join(D, n)

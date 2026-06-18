@@ -22,15 +22,15 @@ AGED = list(RATES.keys())
 
 def fnum(x):
     try: return float(str(x).replace(",", ""))
-    except: return None
+    except (ValueError, TypeError): return None
 def fdate(x):
     x = (x or "").strip()
     for fmt in ("%Y-%m-%d", "%m/%d/%Y", "%Y-%m-%d %H:%M:%S"):
         try: return dt.datetime.strptime(x, fmt).date()
-        except: pass
+        except (ValueError, TypeError): pass
     return None
-def load(name):
-    p = os.path.join(D, name)
+def load(name, data_dir=None):
+    p = os.path.join(data_dir or D, name)
     return list(csv.DictReader(open(p, encoding="utf-8"))) if os.path.exists(p) else []
 
 def bucket(due):
@@ -49,9 +49,10 @@ def _imp(r):
 def run_close(data_dir=None):
     """Compute AR close from raw CSVs. Returns result dict (no file I/O)."""
     d = data_dir or D
-    aging = list(csv.DictReader(open(os.path.join(d, "AR_Aging.csv"), encoding="utf-8")))
-    gl    = list(csv.DictReader(open(os.path.join(d, "GL.csv"),       encoding="utf-8")))
-    assert aging and gl, "Need AR_Aging.csv and GL.csv in this folder."
+    aging = load("AR_Aging.csv", d)
+    gl    = load("GL.csv", d)
+    if not aging or not gl:
+        raise ValueError("AR_Aging.csv and GL.csv must exist and be non-empty in " + d)
 
     # age each invoice from its due date (don't trust any stored bucket)
     order = AGED + ["No Due Date"]

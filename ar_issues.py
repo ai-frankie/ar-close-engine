@@ -15,12 +15,12 @@ AR_CONTROL_ACCT = "1200"
 
 def fnum(x):
     try: return float(str(x).replace(",", ""))
-    except: return None
+    except (ValueError, TypeError): return None
 def fdate(x):
     x=(x or "").strip()
     for f in ("%Y-%m-%d","%m/%d/%Y","%Y-%m-%d %H:%M:%S"):
         try: return dt.datetime.strptime(x,f).date()
-        except: pass
+        except (ValueError, TypeError): pass
     return None
 def load(n):
     p=os.path.join(D,n); return list(csv.DictReader(open(p,encoding="utf-8"))) if os.path.exists(p) else []
