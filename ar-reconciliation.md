@@ -1,27 +1,3 @@
----
-name: ar-reconciliation
-description: Execute the full AR accounting cycle — journal entries, reserve calculation, write-offs, recoveries, SOX controls, Excel aging formulas, subledger-to-GL reconciliation, and management reporting.
-category: Accounting
-risk: low
-date_added: 2026-05-27
-triggers:
-  - AR aging
-  - allowance for doubtful accounts
-  - bad debt
-  - bad debt expense
-  - reserve calculation
-  - write-off
-  - credit memo
-  - AR reconciliation
-  - month-end close
-  - collections
-  - subledger
-  - net realizable value
-  - accounts receivable reconciliation
-  - aging report
-  - doubtful accounts
----
-
 # AR Reconciliation & Accounting Cycle
 
 Full reference for the AR accounting cycle. Covers every journal entry, reserve methodology, SOX controls, Excel formulas, and management reporting. Drop any section directly into reports, close packages, or audit prep.

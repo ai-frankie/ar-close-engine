@@ -39,14 +39,15 @@ ALL CONTROLS PASS
 
 ## The reviewer is supposed to find errors
 
-`ar_review.py` audits `AR_Close_Prepared_SAMPLE.xlsx` — a *preparer's* workbook with **planted mistakes** (a double-counted subledger total, a sign-flipped true-up). The reviewer re-derives the correct figures from raw `GL.csv` / `AR_Aging.csv` and flags them:
+`ar_review.py` audits `AR_Close_Prepared_SAMPLE.xlsx` — a *preparer's* workbook with **two planted mistakes**: a double-counted subledger total and a sign-flipped true-up. The reviewer re-derives the correct figures from raw `GL.csv` / `AR_Aging.csv` and flags every figure that doesn't tie:
 
 ```
-[FAIL] subledger total: reported 53,426,683.60 / expected 26,713,341.80  -> double-counted (SUM hit a total row)
-[FAIL] true-up: reported 1,631,173.40 / expected 1,595,173.40            -> sign flip on opening allowance
+[FAIL] subledger total: reported 53,426,683.60 / expected 26,713,341.80  -> ~2x double-counted (SUM hit a total row)
+[FAIL] variance:        reported -26,714,991.80 / expected -1,650.00     -> follows from the doubled subledger
+[FAIL] true-up:         reported 1,631,173.40 / expected 1,595,173.40    -> sign flip on opening allowance
 ```
 
-**Those `[FAIL]`s are the tool succeeding** — independent recomputation catching a preparer error before it reaches the GL. Segregation of duties, in code.
+Two planted errors, **three** flags — the variance fails too, because it's derived from the doubled subledger. That's the point: an independent recomputation surfaces the original error *and* everything downstream of it, before any of it reaches the GL. Segregation of duties, in code.
 
 ## Accounting methodology
 
