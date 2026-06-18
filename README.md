@@ -53,6 +53,18 @@ Two planted errors, **three** flags — the variance fails too, because it's der
 
 `ar-reconciliation.md` is the full reference the engine implements: every journal entry in the AR lifecycle (sale → reserve → write-off → recovery), reserve/NRV methodology, SOX controls, Excel aging formulas, and subledger-to-GL reconciliation.
 
+## Scope & limitations
+
+Built to demonstrate the *controls logic* of an AR close, not as a hardened production system. Honest boundaries:
+
+- **Scales linearly, not a volume constraint.** All passes are O(n). On a stress run of 50,000 invoices + 100,000 GL lines (100× the included demo) it closes in **under a second** — volume isn't where this would break.
+- **Money is float, rounded to the cent** — not `decimal.Decimal`. Exact at any realistic AR size here; for a production ledger I'd move money to `Decimal` with explicit rounding.
+- **Fixed column schema.** It expects specific headers (`Open_Balance`, `Due_Date`, `Account_Number`, …). Real ERP exports vary — a production version needs a column-mapping layer and handling for multi-currency, partial payments, and credit-memo formats.
+- **In-memory.** Loads the whole CSV; fine to hundreds of thousands of rows, not a streaming/DB design for millions.
+- **Synthetic data only**, fictional customers. Business parameters (as-of date, opening allowance, loss rates) are constants, not config.
+
+The reconciliation control is real, not cosmetic: on the stress run with a deliberately mismatched GL, it correctly **fails to tie** rather than smoothing the gap over.
+
 ## Run it
 
 Requires Python 3.11+ and `openpyxl`.
