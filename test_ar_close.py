@@ -8,6 +8,7 @@ Run:  pytest test_ar_close.py -v
 import pytest
 from ar_close import run_close
 from ar_review import compute_truth, run_review
+from ar_controls import run_controls
 
 
 @pytest.fixture(scope="module")
@@ -136,3 +137,48 @@ class TestPlantedErrors:
     def test_total_fails(self):
         _, fails = run_review()
         assert fails >= 2
+
+
+# ── ar_controls.py — SOX-style controls register ──────────────────────────────
+
+class TestControlsRegister:
+    @pytest.fixture(scope="class")
+    @staticmethod
+    def reg():
+        return run_controls()
+
+    def test_register_has_eight_controls(self, reg):
+        assert len(reg["register"]) == 8
+
+    def test_manual_je_to_ar_control_detected(self, reg):
+        c8 = next(c for c in reg["register"] if c["id"] == "C8")
+        assert c8["result"] == "FAIL"
+        assert "1,650" in c8["detail"] or "−1,650" in c8["detail"]
+
+    def test_manual_je_flag_names_source(self, reg):
+        c8 = next(c for c in reg["register"] if c["id"] == "C8")
+        assert any("Manual JE" in e or "Entry" in e for e in c8["exceptions"])
+
+    def test_under_reserved_detected(self, reg):
+        c_r1 = next(c for c in reg["register"] if c["id"] == "C-R1")
+        assert c_r1["result"] == "FAIL"
+        assert "reserve" in c_r1["detail"].lower()
+
+    def test_clean_data_passes_integrity_controls(self, reg):
+        integrity = {c["id"]: c["result"] for c in reg["register"]
+                     if c["id"] in ("C2", "C4", "C5", "C10")}
+        assert all(r == "PASS" for r in integrity.values())
+
+    def test_evidenced_controls_report_ok_or_review(self, reg):
+        evidenced = {c["id"]: c["result"] for c in reg["register"]
+                     if c["delivery"] == "EVIDENCED"}
+        assert all(r in ("OK", "REVIEW") for r in evidenced.values())
+
+    def test_two_failures_total(self, reg):
+        assert reg["fail_count"] == 2
+
+    def test_every_control_has_objective_and_assertion(self, reg):
+        for c in reg["register"]:
+            assert c["objective"] and len(c["objective"]) > 10
+            assert c["assertion"] and c["assertion"] in (
+                "accuracy/valuation", "existence/occurrence", "completeness", "cutoff")
