@@ -293,6 +293,12 @@ def run_controls(data_dir=None):
     if not aging or not gl:
         raise ValueError("AR_Aging.csv and GL.csv must exist and be non-empty in " + d)
 
+    # Validate schema — key columns required for controls
+    if aging and not any("Invoice_Number" in row for row in aging[:1]):
+        raise ValueError("AR_Aging.csv missing Invoice_Number column")
+    if gl and not any("Account_Number" in row for row in gl[:1]):
+        raise ValueError("GL.csv missing Account_Number column")
+
     register = [
         c2_gl_posting_hygiene(gl),
         c4_duplicate_keys(aging, gl),
