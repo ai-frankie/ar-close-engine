@@ -15,6 +15,7 @@ All data is **synthetic** (fictional customers). No real financial data.
 | Script | Role | Output |
 |---|---|---|
 | `ar_close.py` | Automated month-end close — subledger, reserve, NRV, GL reconciliation, controls | `AR_Health_Report.xlsx` |
+| `ar_controls.py` | **Internal controls register** — SOX-style controls: GL hygiene, data integrity, manual-JE detection, cutoff, allowance adequacy, segregation of duties | Console register |
 | `ar_issues.py` | Issue scanner — surfaces every exception needing human attention before close | `AR_Issues_Report.xlsx` |
 | `ar_review.py` | **Independent QA reviewer** — re-computes truth from raw data, audits a *prepared* workbook | `AR_Close_Review.xlsx` |
 | `regen_gl.py` | Regenerates the GL so subledger→GL breaks are discoverable (test-data tooling) | `GL.csv` |
@@ -49,6 +50,27 @@ ALL CONTROLS PASS
 
 Two planted errors, **three** flags — the variance fails too, because it's derived from the doubled subledger. That's the point: an independent recomputation surfaces the original error *and* everything downstream of it, before any of it reaches the GL. Segregation of duties, in code.
 
+## Internal controls register
+
+`ar_controls.py` runs **eight SOX-style controls** on the close, from controller POV:
+
+```
+[PASS] C2 GL posting hygiene — unique Entry_IDs, exactly one of Debit/Credit
+[PASS] C4 Unique primary keys — no duplicate invoices or GL entries
+[PASS] C5 Referential integrity — every GL ref resolves to an invoice
+[FAIL] C8 Manual / top-side JE to AR control — 3 manual JEs to 1200 netting -1,650
+[OK]   C9 Two-way coverage (subledger ↔ GL) — open invoices covered
+[PASS] C10 Period / cutoff integrity — all AR-1200 postings in-period
+[FAIL] C-R1 Allowance adequacy (NRV check) — aging requires 1.6M, GL shows 18K
+[OK]   C21 Segregation of duties (proxy) — no single-source self-cleared items
+
+SUMMARY: 2 FAIL (C8 manual JEs, C-R1 under-reserved), rest PASS/OK
+```
+
+The three manual JEs to 1200 are **organic reconciling items** in the synthetic data (reclass error, unapplied cash, credit-memo accrual error) that net to exactly the AR↔GL variance the close reconciles — the control demonstrably fires and a controller would review & approve them before sign-off. C-R1 fails because the opening allowance (18K) is way below the aging-computed requirement (1.6M), showing the true-up needed.
+
+Full methodology and audit-assertion mapping: see **[CONTROLS.md](CONTROLS.md)**.
+
 ## Accounting methodology
 
 `ar-reconciliation.md` is the full reference the engine implements: every journal entry in the AR lifecycle (sale → reserve → write-off → recovery), reserve/NRV methodology, SOX controls, Excel aging formulas, and subledger-to-GL reconciliation.
@@ -72,6 +94,7 @@ Requires Python 3.11+ and `openpyxl`.
 ```bash
 pip install -r requirements.txt
 python ar_close.py     # automated close + controls
+python ar_controls.py  # SOX-style controls register
 python ar_issues.py    # exception scanner
 python ar_review.py    # independent reviewer (catches planted errors)
 ```
@@ -85,4 +108,4 @@ pip install -r requirements.txt pytest
 pytest -v
 ```
 
-`test_ar_close.py` — **25 tests**, run in CI on every push. They assert the close ties to the cent (subledger `26,713,341.80`, reserve `1,613,173.40`, NRV `25,100,168.40`, recon residual `0.00`, all five controls pass) and that the independent reviewer catches **both** planted preparer errors (the double-counted subledger and the sign-flipped true-up). The scripts expose `run_close()` / `compute_truth()` / `run_review()` so the logic is testable without side effects — `import ar_close` does nothing until you call it.
+`test_ar_close.py` — **33 tests** (25 core + 8 controls), run in CI on every push. Core tests assert the close ties to the cent (subledger `26,713,341.80`, reserve `1,613,173.40`, NRV `25,100,168.40`, recon residual `0.00`, all five controls pass) and that the independent reviewer catches **both** planted preparer errors (the double-counted subledger and the sign-flipped true-up). Controls tests verify the register has 8 controls, C8 detects the 3 manual JEs, C-R1 detects under-reserving, and PASS/OK/REVIEW verdicts are correct. The scripts expose `run_close()` / `compute_truth()` / `run_review()` / `run_controls()` so the logic is testable without side effects — `import ar_close` does nothing until you call it.
